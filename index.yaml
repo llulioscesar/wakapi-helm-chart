@@ -3,12 +3,12 @@ entries:
   wakapi:
   - apiVersion: v2
     appVersion: 2.15.0
-    created: "2025-09-20T19:58:36.028185-05:00"
+    created: "2025-09-20T19:59:51.642756-05:00"
     description: A Helm chart for self hosted Wakapi server
     digest: 536f243282bdc481ec59b5e5dd3270045100d3c49ed0ae77f1c3857b841a952b
     name: wakapi
     type: application
     urls:
-    - https://andreymaznyak.github.io/wakapi-helm-chart/wakapi-1.1.15.tgz
+    - https://start-codex.github.io/wakapi-helm-chart/wakapi-1.1.15.tgz
     version: 1.1.15
-generated: "2025-09-20T19:58:36.027768-05:00"
+generated: "2025-09-20T19:59:51.642301-05:00"
