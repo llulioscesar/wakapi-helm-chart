@@ -162,13 +162,30 @@ wakapi_config:
 
 ## 📊 Monitoreo y Observabilidad
 
-### Sentry (Opcional)
+### Sentry (OBLIGATORIO - Configuración Requerida)
+
+⚠️ **IMPORTANTE**: La sección `sentry` es **OBLIGATORIA** en el archivo de configuración. El template del chart siempre busca estos campos, incluso si no usas Sentry.
+
+#### Si NO usas Sentry (Configuración por defecto)
 ```yaml
 wakapi_config:
   sentry:
-    dsn: "https://tu-dsn@sentry.io/proyecto"
+    dsn: ""                           # OBLIGATORIO: Vacío = Sentry deshabilitado
+    environment: "production"         # OBLIGATORIO
+    enable_tracing: false             # OBLIGATORIO
+    sample_rate: "1.0"                # OBLIGATORIO
+    sample_rate_heartbeats: "0.1"     # OBLIGATORIO
+```
+
+#### Si SÍ usas Sentry
+```yaml
+wakapi_config:
+  sentry:
+    dsn: "https://tu-dsn@sentry.io/proyecto"  # Tu DSN real de Sentry
     environment: "production"
     enable_tracing: true
+    sample_rate: "1.0"
+    sample_rate_heartbeats: "0.1"
 ```
 
 ### Métricas de Prometheus
@@ -210,17 +227,21 @@ wakapi_secrets:
 
 ### Error: `nil pointer evaluating interface {}.dsn`
 
-Asegúrate de incluir la configuración completa de Sentry:
+Este error indica que **falta la sección `sentry` completa**. La configuración de Sentry es **OBLIGATORIA** en el archivo values, incluso si no usas Sentry.
+
+**Solución**: Incluye SIEMPRE la sección completa de Sentry:
 
 ```yaml
 wakapi_config:
   sentry:
-    dsn: ""
-    environment: "production"
-    enable_tracing: false
-    sample_rate: "1.0"
-    sample_rate_heartbeats: "0.1"
+    dsn: ""                           # OBLIGATORIO: Vacío si no usas Sentry
+    environment: "production"         # OBLIGATORIO
+    enable_tracing: false             # OBLIGATORIO
+    sample_rate: "1.0"                # OBLIGATORIO
+    sample_rate_heartbeats: "0.1"     # OBLIGATORIO
 ```
+
+💡 **Importante**: El template del chart **siempre** busca estos campos. No puedes omitir la sección `sentry`, pero puedes deshabilitarla con `dsn: ""`.
 
 ## 📝 Ejemplos Completos
 
