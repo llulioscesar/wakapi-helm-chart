@@ -109,56 +109,95 @@ affinity: {}
 
 exposeMetrics: false
 
-# Wakapi app config
-wakapi_config:
-  env: development
-  skip_migrations: false
-
-  server:
-    listen_ipv4: "0.0.0.0" # leave blank to disable ipv4
-    listen_ipv6: # leave blank to disable ipv6
-    tls_cert_path: # leave blank to not use https
-    tls_key_path: # leave blank to not use https
-    port: 3000
-    base_path: /
-
-  app:
-    aggregation_time: '02:15' # time at which to run daily aggregation batch jobs
-    inactive_days: 7 # time of previous days within a user must have logged in to be considered active
-    custom_languages:
-      vue: Vue
-      jsx: JSX
-    leaderboard_require_auth: false
-    count_cache_ttl_min: 30
-    data_cleanup_dry_run: false
-
+# Wakapi secrets (REQUIRED)
+wakapi_secrets:
   db:
-    host: # leave blank when using sqlite3
-    port: # leave blank when using sqlite3
-    user: # leave blank when using sqlite3
-    password: # leave blank when using sqlite3
-    name: /data/wakapi_db.db # database name for mysql / postgres or file path for sqlite (e.g. /tmp/wakapi.db)
-    dialect: sqlite3 # mysql, postgres, sqlite3
-    charset: utf8mb4 # only used for mysql connections
-    max_conn: 2 # maximum number of concurrent connections to maintain
-    ssl: false # whether to use tls for db connection (must be true for cockroachdb) (ignored for mysql and sqlite)
-    automigrate_fail_silently: false
-
+    password: "changeme-db-password"
   security:
-    password_salt: # CHANGE !
-    insecure_cookies: false # You need to set this to 'true' when on localhost
-    cookie_max_age: 172800
-    allow_signup: true
-    expose_metrics: false
-    enable_proxy: false
-
+    password_salt: "changeme-salt-must-be-at-least-32-characters-long"
   mail:
-    enabled: false
-    sender: "noreply@wakapi.dev"
-    provider: "smtp"
     smtp:
-      host: "smtp.example.com"
-      port: 465
-      username: "your_username"
-      password: "your_password"
-      tls: true
+      password: "changeme-smtp-password"
+
+# PostgreSQL dependency configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "changeme-postgres-password"
+    username: "wakapi"
+    password: "changeme-wakapi-password"
+    database: "wakapi"
+
+# External PostgreSQL configuration (when postgresql.enabled=false)
+externalPostgresql:
+  host: "localhost"
+  port: 5432
+  user: "wakapi"
+  database: "wakapi"
+  existingSecret: ""
+  existingSecretPasswordKey: "password"
+
+# Wakapi app config
+wakapi:
+  config:
+    env: production
+    server:
+      port: 3000
+      public_url: "http://localhost:3000"
+      listen_ipv4: "0.0.0.0"
+      listen_ipv6: ""
+      tls_cert_path: ""
+      tls_key_path: ""
+
+    db:
+      dialect: postgres
+      charset: utf8mb4
+      max_conn: 2
+      ssl: false
+      automigrate_fail_silently: false
+
+    security:
+      allow_signup: true
+      expose_metrics: false
+      enable_proxy: false
+      insecure_cookies: false
+      cookie_max_age: 172800
+      session_timeout: 172800
+      trusted_header_auth: false
+      trusted_header_auth_key: ""
+
+    app:
+      aggregation_time: "02:15"
+      report_time_weekly: "fri,18:00"
+      import_enabled: true
+      inactive_days: 7
+      heartbeat_max_age: "4320h"
+      count_cache_timeout: "30m"
+      avatar_url_template: "https://www.gravatar.com/avatar/{email_hash}?s=80&d=retro"
+
+    sentry:
+      dsn: ""
+      environment: "production"
+      enable_tracing: false
+      sample_rate: "1.0"
+      sample_rate_heartbeats: "0.1"
+
+    mail:
+      enabled: false
+      sender: "noreply@wakapi.dev"
+      smtp:
+        host: "smtp.example.com"
+        port: 587
+        username: "your_username"
+        tls: true
+
+  secrets:
+    security:
+      password_salt: "changeme-salt-must-be-at-least-32-characters-long"
+    db:
+      password: "changeme-db-password"
+    mail:
+      smtp:
+        password: "changeme-smtp-password"
+
+  extraEnvVars: []

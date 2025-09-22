@@ -40,7 +40,7 @@ spec:
                 name: {{ include "wakapi.fullname" . }}-secrets
           ports:
             - name: http
-              containerPort: {{ .Values.wakapi_config.server.port }}
+              containerPort: {{ .Values.wakapi.config.server.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
