@@ -19,6 +19,14 @@ jobs:
         with:
           version: v3.12.1
 
+      - name: Add dependency chart repos
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Update chart dependencies
+        run: |
+          helm dependency update charts/wakapi
+
       - name: Lint chart
         run: |
           helm lint charts/wakapi
