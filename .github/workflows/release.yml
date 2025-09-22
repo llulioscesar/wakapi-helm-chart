@@ -28,37 +28,16 @@ jobs:
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
 
-      - name: Update chart dependencies
-        run: |
-          helm dependency update charts/wakapi
-
-      - name: Package and release chart
-        run: |
-          # Create release packages directory
-          mkdir -p .cr-release-packages
-
-          # Package the chart
-          helm package charts/wakapi -d .cr-release-packages
-
-          # Get chart info
-          CHART_VERSION=$(helm show chart charts/wakapi | grep '^version:' | cut -d' ' -f2)
-          CHART_NAME="wakapi"
-          RELEASE_NAME="${CHART_NAME}-${CHART_VERSION}"
-          PACKAGE_FILE=".cr-release-packages/${CHART_NAME}-${CHART_VERSION}.tgz"
-
-          # Check if release already exists
-          if gh release view "$RELEASE_NAME" >/dev/null 2>&1; then
-            echo "Release $RELEASE_NAME already exists, skipping..."
-          else
-            # Create GitHub release
-            gh release create "$RELEASE_NAME" \
-              --title "$RELEASE_NAME" \
-              --notes "A Helm chart for self hosted Wakapi server" \
-              "$PACKAGE_FILE"
-            echo "Created release $RELEASE_NAME"
-          fi
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        with:
+          charts_dir: charts
+          skip_existing: true
+          mark_as_latest: false
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_SKIP_EXISTING: true
+          CR_RELEASE_ONLY: true
 
       - name: Trigger Pages Workflow
         if: github.ref == 'refs/heads/main'
