@@ -1,0 +1,78 @@
+name: Test Chart
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.1
+
+      - name: Add dependency chart repos
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Update chart dependencies
+        run: |
+          helm dependency update charts/wakapi
+
+      - name: Lint chart
+        run: |
+          helm lint charts/wakapi
+          echo "✅ Chart lint passed"
+
+      - name: Test chart templates
+        run: |
+          echo "Testing default configuration..."
+          helm template test charts/wakapi > /dev/null
+          echo "✅ Default template generation passed"
+
+          echo "Testing with custom values..."
+          helm template test charts/wakapi --set postgresql.enabled=false --set externalPostgresql.host=localhost > /dev/null
+          echo "✅ Custom values template generation passed"
+
+      - name: Package chart
+        run: |
+          helm package charts/wakapi
+          ls -la *.tgz
+          echo "✅ Chart packaging passed"
+
+      - name: Test installation (template only)
+        run: |
+          echo "Testing template generation with default values..."
+          helm template test-wakapi charts/wakapi > /dev/null
+          echo "✅ Template generation with default values passed"
+
+          echo "Testing template generation with custom values..."
+          cat > test-values.yaml << 'EOF2'
+          postgresql:
+            enabled: true
+            auth:
+              postgresPassword: "testpassword"
+              database: "wakapi"
+
+          wakapi:
+            config:
+              db_host: wakapi-postgresql
+              db_port: 5432
+              db_user: postgres
+              db_name: wakapi
+              salt_key: "wakapi-salt-key"
+              password_secret: "wakapi-password-secret"
+              trusted_header_auth: false
+              trusted_header_auth_key: ""
+              sentry_dsn: ""
+          EOF2
+          helm template test-wakapi charts/wakapi -f test-values.yaml > /dev/null
+          echo "✅ Template generation with custom values passed"

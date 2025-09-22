@@ -1,0 +1,239 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Chart.yaml'
+      - 'README.md'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        continue-on-error: true
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.1
+
+      - name: Add dependency chart repos
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Update chart dependencies
+        run: |
+          helm dependency update charts/wakapi
+
+      - name: Create Helm repository index
+        run: |
+          # Create directories
+          mkdir -p .cr-release-packages
+          mkdir -p public
+
+          # Download existing index.yaml and .tgz files to preserve history
+          echo "Downloading existing repository files..."
+          wget -q https://start-codex.github.io/wakapi-helm-chart/index.yaml -O existing-index.yaml || echo "No existing index.yaml found"
+
+          # Download existing .tgz files if index exists
+          if [ -f existing-index.yaml ]; then
+            echo "Parsing existing chart versions..."
+            # Extract URLs of existing chart packages from index.yaml and download to both directories
+            urls=$(grep -o 'https://start-codex.github.io/wakapi-helm-chart/[^"]*\.tgz' existing-index.yaml || true)
+            if [ -n "$urls" ]; then
+              echo "$urls" | while read url; do
+                if [ -n "$url" ]; then
+                  filename=$(basename "$url")
+                  echo "Downloading existing chart: $filename"
+                  # Download to both .cr-release-packages and public for efficiency
+                  wget -q "$url" -O ".cr-release-packages/$filename" || echo "Failed to download $filename to .cr-release-packages"
+                  wget -q "$url" -O "public/$filename" || echo "Failed to download $filename to public"
+                fi
+              done
+            else
+              echo "No existing chart packages found in index"
+            fi
+
+            # Copy existing index to merge later
+            cp existing-index.yaml .cr-release-packages/ || true
+          fi
+
+          # Package the current chart
+          helm package charts/wakapi -d .cr-release-packages
+
+          # Create/update the index with existing and new charts
+          if [ -f .cr-release-packages/existing-index.yaml ]; then
+            echo "Merging with existing index..."
+            helm repo index .cr-release-packages --url https://start-codex.github.io/wakapi-helm-chart --merge .cr-release-packages/existing-index.yaml
+          else
+            echo "Creating new index..."
+            helm repo index .cr-release-packages --url https://start-codex.github.io/wakapi-helm-chart
+          fi
+
+          # Copy new chart files to public directory
+          if ls .cr-release-packages/*.tgz 1> /dev/null 2>&1; then
+            cp .cr-release-packages/*.tgz public/ || true
+          fi
+
+          # Copy the updated index
+          if [ -f .cr-release-packages/index.yaml ]; then
+            cp .cr-release-packages/index.yaml public/
+          fi
+
+          cp README.md public/ || true
+
+          # Verify what we have
+          echo "Contents of public directory:"
+          ls -la public/
+
+          # Show chart versions in the index
+          if [ -f public/index.yaml ]; then
+            echo ""
+            echo "Chart versions in repository:"
+            grep -A 2 "version:" public/index.yaml | grep "version:" | sort -V || echo "No versions found"
+
+            echo ""
+            echo "Total charts in repository:"
+            grep "\.tgz" public/index.yaml | wc -l || echo "0"
+          fi
+
+          # Create a simple index.html
+          cat > public/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Wakapi Helm Chart Repository</title>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      max-width: 800px;
+                      margin: 40px auto;
+                      padding: 20px;
+                      line-height: 1.6;
+                  }
+                  .header {
+                      text-align: center;
+                      margin-bottom: 40px;
+                      border-bottom: 2px solid #eee;
+                      padding-bottom: 20px;
+                  }
+                  .code {
+                      background: #f4f4f4;
+                      padding: 15px;
+                      border-radius: 5px;
+                      font-family: 'Courier New', monospace;
+                      margin: 10px 0;
+                  }
+                  .section {
+                      margin: 30px 0;
+                  }
+                  h1 { color: #2c5aa0; }
+                  h2 { color: #34495e; }
+                  .logo {
+                      width: 80px;
+                      height: 80px;
+                      margin: 0 auto 20px;
+                      background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+                      border-radius: 15px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      color: white;
+                      font-size: 24px;
+                      font-weight: bold;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <div class="logo">WK</div>
+                  <h1>Wakapi Helm Chart Repository</h1>
+                  <p>Official Helm chart for Wakapi - A minimalist WakaTime clone</p>
+              </div>
+
+              <div class="section">
+                  <h2>🚀 Quick Start</h2>
+                  <p>Add this repository to your Helm:</p>
+                  <div class="code">helm repo add wakapi https://start-codex.github.io/wakapi-helm-chart<br>helm repo update</div>
+
+                  <p>Install Wakapi:</p>
+                  <div class="code">helm install my-wakapi wakapi/wakapi</div>
+              </div>
+
+              <div class="section">
+                  <h2>📦 Available Charts</h2>
+                  <ul>
+                      <li><strong>wakapi</strong> - Wakapi server with PostgreSQL backend</li>
+                  </ul>
+              </div>
+
+              <div class="section">
+                  <h2>🔧 Configuration</h2>
+                  <p>The chart supports various configuration options:</p>
+                  <div class="code"># Basic installation<br>helm install wakapi wakapi/wakapi<br><br># With custom values<br>helm install wakapi wakapi/wakapi -f values.yaml</div>
+              </div>
+
+              <div class="section">
+                  <h2>📚 Documentation</h2>
+                  <p>For detailed configuration options and examples, visit:</p>
+                  <ul>
+                      <li><a href="https://github.com/start-codex/wakapi-helm-chart">GitHub Repository</a></li>
+                      <li><a href="https://wakapi.dev/">Wakapi Official Website</a></li>
+                  </ul>
+              </div>
+
+              <div class="section">
+                  <h2>📁 Repository Files</h2>
+                  <ul>
+                      <li><a href="index.yaml">index.yaml</a> - Helm repository index</li>
+                      <li><a href="README.md">README.md</a> - Chart documentation</li>
+                  </ul>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.repository_owner != ''
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
