@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'Chart.yaml'
+      - 'charts/wakapi/Chart.yaml'
       - 'README.md'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -50,35 +50,37 @@ jobs:
           helm dependency update charts/wakapi
 
       - name: Create Helm repository index
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Create directories
           mkdir -p .cr-release-packages
           mkdir -p public
 
-          # Download existing index.yaml and .tgz files to preserve history
+          # Download existing index.yaml to preserve history
           echo "Downloading existing repository files..."
           wget -q https://start-codex.github.io/wakapi-helm-chart/index.yaml -O existing-index.yaml || echo "No existing index.yaml found"
 
-          # Download existing .tgz files if index exists
-          if [ -f existing-index.yaml ]; then
-            echo "Parsing existing chart versions..."
-            # Extract URLs of existing chart packages from index.yaml and download to both directories
-            urls=$(grep -o 'https://start-codex.github.io/wakapi-helm-chart/[^"]*\.tgz' existing-index.yaml || true)
-            if [ -n "$urls" ]; then
-              echo "$urls" | while read url; do
-                if [ -n "$url" ]; then
-                  filename=$(basename "$url")
-                  echo "Downloading existing chart: $filename"
-                  # Download to both .cr-release-packages and public for efficiency
-                  wget -q "$url" -O ".cr-release-packages/$filename" || echo "Failed to download $filename to .cr-release-packages"
-                  wget -q "$url" -O "public/$filename" || echo "Failed to download $filename to public"
+          # Download chart packages from GitHub releases
+          echo "Downloading chart packages from GitHub releases..."
+          gh release list --limit 50 | while read -r line; do
+            if [ -n "$line" ]; then
+              release_tag=$(echo "$line" | cut -f1)
+              echo "Processing release: $release_tag"
+
+              # Download .tgz files from this release
+              gh release view "$release_tag" --json assets --jq '.assets[].name' | grep '\.tgz$' | while read -r asset_name; do
+                if [ -n "$asset_name" ]; then
+                  echo "Downloading $asset_name from $release_tag"
+                  gh release download "$release_tag" -p "$asset_name" -D .cr-release-packages || echo "Failed to download $asset_name"
+                  cp ".cr-release-packages/$asset_name" "public/" 2>/dev/null || true
                 fi
               done
-            else
-              echo "No existing chart packages found in index"
             fi
+          done
 
-            # Copy existing index to merge later
+          # Copy existing index to merge later if it exists
+          if [ -f existing-index.yaml ]; then
             cp existing-index.yaml .cr-release-packages/ || true
           fi
 
