@@ -82,43 +82,43 @@ jobs:
 
       - name: Create test values file
         run: |
-          cat > test-values-\${{ matrix.config.name }}.yaml << 'EOF2'
-          \${{ matrix.config.values }}
+          cat > test-values-${{ matrix.config.name }}.yaml << 'EOF2'
+          ${{ matrix.config.values }}
           EOF2
 
-      - name: Lint chart with \${{ matrix.config.name }} config
+      - name: Lint chart with ${{ matrix.config.name }} config
         run: |
-          helm lint charts/wakapi -f test-values-\${{ matrix.config.name }}.yaml
-          echo "✅ Lint passed for \${{ matrix.config.name }}"
+          helm lint charts/wakapi -f test-values-${{ matrix.config.name }}.yaml
+          echo "✅ Lint passed for ${{ matrix.config.name }}"
 
-      - name: Test template generation for \${{ matrix.config.name }}
+      - name: Test template generation for ${{ matrix.config.name }}
         run: |
-          helm template test-\${{ matrix.config.name }} charts/wakapi -f test-values-\${{ matrix.config.name }}.yaml > output-\${{ matrix.config.name }}.yaml
-          echo "✅ Template generation passed for \${{ matrix.config.name }}"
+          helm template test-${{ matrix.config.name }} charts/wakapi -f test-values-${{ matrix.config.name }}.yaml > output-${{ matrix.config.name }}.yaml
+          echo "✅ Template generation passed for ${{ matrix.config.name }}"
 
       - name: Validate generated manifests
         run: |
           # Check that required resources are generated
-          grep -q "kind: Deployment" output-\${{ matrix.config.name }}.yaml || (echo "❌ Deployment not found" && exit 1)
-          grep -q "kind: Service" output-\${{ matrix.config.name }}.yaml || (echo "❌ Service not found" && exit 1)
-          grep -q "kind: ConfigMap" output-\${{ matrix.config.name }}.yaml || (echo "❌ ConfigMap not found" && exit 1)
+          grep -q "kind: Deployment" output-${{ matrix.config.name }}.yaml || (echo "❌ Deployment not found" && exit 1)
+          grep -q "kind: Service" output-${{ matrix.config.name }}.yaml || (echo "❌ Service not found" && exit 1)
+          grep -q "kind: ConfigMap" output-${{ matrix.config.name }}.yaml || (echo "❌ ConfigMap not found" && exit 1)
 
           # Check PostgreSQL configuration
-          if [[ "\${{ matrix.config.name }}" == *"external-postgresql"* ]]; then
-            ! grep -q "kind: StatefulSet" output-\${{ matrix.config.name }}.yaml || (echo "❌ PostgreSQL StatefulSet found when external DB configured" && exit 1)
+          if [[ "${{ matrix.config.name }}" == *"external-postgresql"* ]]; then
+            ! grep -q "kind: StatefulSet" output-${{ matrix.config.name }}.yaml || (echo "❌ PostgreSQL StatefulSet found when external DB configured" && exit 1)
           else
-            grep -q "kind: StatefulSet" output-\${{ matrix.config.name }}.yaml || (echo "❌ PostgreSQL StatefulSet not found when internal DB enabled" && exit 1)
+            grep -q "kind: StatefulSet" output-${{ matrix.config.name }}.yaml || (echo "❌ PostgreSQL StatefulSet not found when internal DB enabled" && exit 1)
           fi
 
           # Check resource limits if configured
-          if [[ "\${{ matrix.config.name }}" == *"resource-limits"* ]]; then
-            grep -q "resources:" output-\${{ matrix.config.name }}.yaml || (echo "❌ Resources not found when configured" && exit 1)
+          if [[ "${{ matrix.config.name }}" == *"resource-limits"* ]]; then
+            grep -q "resources:" output-${{ matrix.config.name }}.yaml || (echo "❌ Resources not found when configured" && exit 1)
           fi
 
-          echo "✅ Manifest validation passed for \${{ matrix.config.name }}"
+          echo "✅ Manifest validation passed for ${{ matrix.config.name }}"
 
       - name: Upload generated manifests
         uses: actions/upload-artifact@v4
         with:
-          name: manifests-\${{ matrix.config.name }}
-          path: output-\${{ matrix.config.name }}.yaml
+          name: manifests-${{ matrix.config.name }}
+          path: output-${{ matrix.config.name }}.yaml
