@@ -79,20 +79,16 @@ jobs:
             fi
           done
 
-          # Copy existing index to merge later if it exists
-          if [ -f existing-index.yaml ]; then
-            cp existing-index.yaml .cr-release-packages/ || true
-          fi
-
           # Package the current chart
           helm package charts/wakapi -d .cr-release-packages
 
-          # Create/update the index with existing and new charts
-          if [ -f .cr-release-packages/existing-index.yaml ]; then
-            echo "Merging with existing index..."
+          # Check if existing index has content and copy it for merging
+          if [ -f existing-index.yaml ] && [ -s existing-index.yaml ]; then
+            echo "Found existing index with content, will merge..."
+            cp existing-index.yaml .cr-release-packages/
             helm repo index .cr-release-packages --url https://start-codex.github.io/wakapi-helm-chart --merge .cr-release-packages/existing-index.yaml
           else
-            echo "Creating new index..."
+            echo "No existing index or empty index, creating new one..."
             helm repo index .cr-release-packages --url https://start-codex.github.io/wakapi-helm-chart
           fi
 
