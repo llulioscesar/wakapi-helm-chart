@@ -28,16 +28,18 @@ jobs:
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
 
+      - name: Update chart dependencies
+        run: |
+          helm dependency update charts/wakapi
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
           charts_dir: charts
           skip_existing: true
-          mark_as_latest: false
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CR_SKIP_EXISTING: true
-          CR_RELEASE_ONLY: true
 
       - name: Trigger Pages Workflow
         if: github.ref == 'refs/heads/main'
