@@ -1,2 +1,27 @@
-.idea/
+# IDE
+.idea
+.vscode
+.claude
+
+# Dependencies
 node_modules
+
+# Helm
+*.tgz
+.cr-release-packages/
+charts/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local development
+values-local.yaml
+values-dev.yaml
+
+# Build artifacts
+public/

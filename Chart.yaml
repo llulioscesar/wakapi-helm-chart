@@ -1,0 +1,27 @@
+apiVersion: v2
+name: wakapi
+description: A Helm chart for Wakapi - A minimalist, self-hosted WakaTime-compatible backend for coding statistics
+type: application
+version: 1.1.16
+appVersion: "2.15.0"
+home: https://wakapi.dev/
+sources:
+  - https://github.com/muety/wakapi
+  - https://github.com/start-codex/wakapi-helm-chart
+maintainers:
+  - name: Start Codex
+    email: git@startcodex.com
+keywords:
+  - wakapi
+  - wakatime
+  - coding-statistics
+  - time-tracking
+  - development-metrics
+dependencies:
+  - name: postgresql
+    version: "~15.5.17"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+annotations:
+  category: DeveloperTools
+  licenses: MIT
