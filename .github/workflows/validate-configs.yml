@@ -80,12 +80,12 @@ jobs:
 
       - name: Lint chart with \${{ matrix.config.name }} config
         run: |
-          helm lint . -f test-values-\${{ matrix.config.name }}.yaml
+          helm lint charts/wakapi -f test-values-\${{ matrix.config.name }}.yaml
           echo "✅ Lint passed for \${{ matrix.config.name }}"
 
       - name: Test template generation for \${{ matrix.config.name }}
         run: |
-          helm template test-\${{ matrix.config.name }} . -f test-values-\${{ matrix.config.name }}.yaml > output-\${{ matrix.config.name }}.yaml
+          helm template test-\${{ matrix.config.name }} charts/wakapi -f test-values-\${{ matrix.config.name }}.yaml > output-\${{ matrix.config.name }}.yaml
           echo "✅ Template generation passed for \${{ matrix.config.name }}"
 
       - name: Validate generated manifests

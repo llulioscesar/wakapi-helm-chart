@@ -75,7 +75,7 @@ jobs:
           fi
 
           # Package the current chart
-          helm package . -d .cr-release-packages
+          helm package charts/wakapi -d .cr-release-packages
 
           # Create/update the index with existing and new charts
           if [ -f .cr-release-packages/existing-index.yaml ]; then

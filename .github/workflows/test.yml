@@ -21,29 +21,29 @@ jobs:
 
       - name: Lint chart
         run: |
-          helm lint .
+          helm lint charts/wakapi
           echo "✅ Chart lint passed"
 
       - name: Test chart templates
         run: |
           echo "Testing default configuration..."
-          helm template test . > /dev/null
+          helm template test charts/wakapi > /dev/null
           echo "✅ Default template generation passed"
 
           echo "Testing with custom values..."
-          helm template test . --set postgresql.enabled=false --set externalPostgresql.host=localhost > /dev/null
+          helm template test charts/wakapi --set postgresql.enabled=false --set externalPostgresql.host=localhost > /dev/null
           echo "✅ Custom values template generation passed"
 
       - name: Package chart
         run: |
-          helm package .
+          helm package charts/wakapi
           ls -la *.tgz
           echo "✅ Chart packaging passed"
 
       - name: Test installation (template only)
         run: |
           echo "Testing template generation with default values..."
-          helm template test-wakapi . > /dev/null
+          helm template test-wakapi charts/wakapi > /dev/null
           echo "✅ Template generation with default values passed"
 
           echo "Testing template generation with custom values..."
@@ -53,7 +53,7 @@ jobs:
             auth:
               postgresPassword: "testpassword"
               database: "wakapi"
-          
+
           wakapi:
             config:
               db_host: wakapi-postgresql
@@ -66,5 +66,5 @@ jobs:
               trusted_header_auth_key: ""
               sentry_dsn: ""
           EOF2
-          helm template test-wakapi . -f test-values.yaml > /dev/null
+          helm template test-wakapi charts/wakapi -f test-values.yaml > /dev/null
           echo "✅ Template generation with custom values passed"
